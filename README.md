@@ -8,4 +8,4 @@ Supported surface types:
 5) Russian polynomial equation (ОСТ 3-4918-93) 
 
 SurfaceMaster requires compiled EquationFitter.exe in the program folder. Equation fitter is written on python and needs to be compiled to .exe (using pyinstaller --onefile equationfitter.py).
-Equationfitter.py is located in OpticsEquationFitter repository.
+Equationfitter.py is located in OpticsEquationFitter repository https://github.com/JagermeisterLover/OpticsEquationFitter.
