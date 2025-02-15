@@ -227,6 +227,7 @@
             checkBoxStep = new CheckBox();
             playButton = new Button();
             buttonLoadFittedEquation = new Button();
+            buttonUpdate = new Button();
             menuStrip1.SuspendLayout();
             panelEvenAsphere.SuspendLayout();
             panelOddAsphere.SuspendLayout();
@@ -1449,11 +1450,19 @@
             buttonLoadFittedEquation.UseVisualStyleBackColor = true;
             buttonLoadFittedEquation.Click += buttonLoadFittedEquation_Click;
             // 
+            // buttonUpdate
+            // 
+            resources.ApplyResources(buttonUpdate, "buttonUpdate");
+            buttonUpdate.Name = "buttonUpdate";
+            buttonUpdate.UseVisualStyleBackColor = true;
+            buttonUpdate.Click += buttonUpdate_Click;
+            // 
             // SurfaceMaster
             // 
             resources.ApplyResources(this, "$this");
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlLightLight;
+            Controls.Add(buttonUpdate);
             Controls.Add(buttonLoadFittedEquation);
             Controls.Add(playButton);
             Controls.Add(checkBoxStep);
@@ -1695,5 +1704,6 @@
         private Button buttonConvertToUnZ;
         private ToolStripButton toolStripButtonReport;
         private Button buttonLoadFittedEquation;
+        private Button buttonUpdate;
     }
 }

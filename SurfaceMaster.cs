@@ -19,6 +19,7 @@ public partial class SurfaceMaster : Form
 
     private DataGridView dataGridView;
 
+    private string updateDownloadUrl = null;
 
     private List<(double r, double z, double asphericity, double slope, double normalAberration, double angle)> results
         = new List<(double r, double z, double asphericity, double slope, double normalAberration, double angle)>();
@@ -27,7 +28,7 @@ public partial class SurfaceMaster : Form
     private readonly SurfaceCalculations surfaceCalculations;
     private ZMXdataDialogue zmxDataDialogue;
 
-    private const string CurrentVersion = "2.0.7";
+    private const string CurrentVersion = "2.0.9";
 
     // Add Windows Media Player instance
     private WindowsMediaPlayer mediaPlayer;
@@ -126,7 +127,7 @@ public partial class SurfaceMaster : Form
         {
             string encodedUrl = e.LinkText.Substring("update://".Length);
             string downloadUrl = Uri.UnescapeDataString(encodedUrl);
-            StartUpdate();
+            StartUpdate(downloadUrl);
         }
     }
 
@@ -175,12 +176,22 @@ public partial class SurfaceMaster : Form
 
                     if (new Version(cleanedTag) > new Version(CurrentVersion))
                     {
+                        // Get the download URL from the release.
                         string downloadUrl = GetDownloadUrlFromRelease(release);
-                        AppendToConsole("About to call StartUpdate()");
-                        StartUpdate();
-                        if (downloadUrl != null)
+                        if (!string.IsNullOrEmpty(downloadUrl))
                         {
-                            AppendUpdateLink(originalTag, downloadUrl);
+                            // Store the URL and enable the update button.
+                            updateDownloadUrl = downloadUrl;
+                            AppendToConsole($"New version {originalTag} available. Click the Update button to download the update.");
+
+                            if (buttonUpdate.InvokeRequired)
+                            {
+                                buttonUpdate.Invoke(() => buttonUpdate.Enabled = true);
+                            }
+                            else
+                            {
+                                buttonUpdate.Enabled = true;
+                            }
                         }
                         else
                         {
@@ -218,7 +229,15 @@ public partial class SurfaceMaster : Form
             : null;
     }
 
-
+    private void buttonUpdate_Click(object sender, EventArgs e)
+    {
+        if (!string.IsNullOrEmpty(updateDownloadUrl))
+        {
+            // Optionally disable the button to prevent multiple clicks.
+            buttonUpdate.Enabled = false;
+            StartUpdate(updateDownloadUrl);
+        }
+    }
     private bool IsNewVersion(string latestVersion)
     {
         // Remove any leading 'v' (or 'V') from the version string.
@@ -264,7 +283,7 @@ public partial class SurfaceMaster : Form
         }
     }
 
-    private async void StartUpdate()
+    private async void StartUpdate(string downloadUrl)
     {
         try
         {
@@ -272,7 +291,7 @@ public partial class SurfaceMaster : Form
             string zipPath = Path.Combine(tempDir, "SurfaceMasterUpdate.zip");
             string extractPath = Path.Combine(tempDir, "SurfaceMasterUpdate");
 
-            // Cleanup previous updates
+            // Cleanup previous updates.
             if (File.Exists(zipPath)) File.Delete(zipPath);
             if (Directory.Exists(extractPath)) Directory.Delete(extractPath, true);
 
@@ -286,16 +305,10 @@ public partial class SurfaceMaster : Form
                 client.Timeout = TimeSpan.FromMinutes(5);
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("SurfaceMasterUpdater/1.0");
 
-                // Get latest release info
-                var releaseResponse = await client.GetStringAsync(
-                    "https://api.github.com/repos/JagermeisterLover/SurfaceMaster/releases/latest");
-                dynamic release = JsonConvert.DeserializeObject(releaseResponse);
-                string downloadUrl = release.assets[0].browser_download_url.ToString();
-
                 AppendToConsole($"Starting download from: {downloadUrl}");
 
-                // Configure download with large buffer
-                const int bufferSize = 1048576; // 1MB buffer
+                // Configure download with a large buffer.
+                const int bufferSize = 1048576; // 1MB buffer.
                 using (var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
                 using (var contentStream = await response.Content.ReadAsStreamAsync())
                 using (var fs = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.Asynchronous))
@@ -312,7 +325,7 @@ public partial class SurfaceMaster : Form
                         await fs.WriteAsync(buffer, 0, read);
                         totalRead += read;
 
-                        // Progress reporting with speed
+                        // Progress reporting with speed.
                         if (totalBytes > 0)
                         {
                             int progressPercentage = (int)((totalRead * 100) / totalBytes);
@@ -330,7 +343,7 @@ public partial class SurfaceMaster : Form
                     AppendToConsole($"Download completed in {sw.Elapsed.TotalSeconds:0.0}s");
                 }
 
-                // Verify ZIP file
+                // Verify ZIP file.
                 using (var file = File.OpenRead(zipPath))
                 {
                     byte[] header = new byte[4];
@@ -342,11 +355,11 @@ public partial class SurfaceMaster : Form
                     }
                 }
 
-                // Extract files
+                // Extract files.
                 AppendToConsole("Extracting update package...");
                 ZipFile.ExtractToDirectory(zipPath, extractPath);
 
-                // Start updater process
+                // Start the updater process.
                 string appDir = AppDomain.CurrentDomain.BaseDirectory;
                 string updaterPath = Path.Combine(appDir, "Updater.exe");
 
@@ -360,7 +373,7 @@ public partial class SurfaceMaster : Form
                 {
                     Arguments = $"\"{Application.ExecutablePath}\" \"{extractPath}\"",
                     UseShellExecute = true,
-                    Verb = "runas" // Request admin privileges
+                    Verb = "runas" // Request admin privileges.
                 };
 
                 AppendToConsole("Launching updater...");
@@ -2265,6 +2278,8 @@ public partial class SurfaceMaster : Form
             if (textBox != null) textBox.Text = parameters[$"A{i}"];
         }
     }
+
+
 }
 
 
