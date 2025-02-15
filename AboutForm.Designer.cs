@@ -60,7 +60,7 @@
             label3.Name = "label3";
             label3.Size = new Size(201, 21);
             label3.TabIndex = 3;
-            label3.Text = "Version 2.0.3, Feb 15, 2025";
+            label3.Text = "Version 2.0.9, Feb 15, 2025";
             // 
             // pictureBoxPepes
             // 
