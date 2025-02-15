@@ -63,9 +63,9 @@ namespace SurfaceMaster.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap _1627327911_tameable_goats_3 {
+        internal static System.Drawing.Bitmap pepeG {
             get {
-                object obj = ResourceManager.GetObject("1627327911_tameable-goats_3", resourceCulture);
+                object obj = ResourceManager.GetObject("pepeG", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -73,9 +73,19 @@ namespace SurfaceMaster.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap channels4_profile__1_ {
+        internal static System.Drawing.Bitmap rarepepe {
             get {
-                object obj = ResourceManager.GetObject("channels4_profile (1)", resourceCulture);
+                object obj = ResourceManager.GetObject("rarepepe", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap rarepepe1 {
+            get {
+                object obj = ResourceManager.GetObject("rarepepe1", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -86,16 +96,6 @@ namespace SurfaceMaster.Properties {
         internal static System.Drawing.Bitmap Screenshot_294 {
             get {
                 object obj = ResourceManager.GetObject("Screenshot_294", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap wallpaperflare_com_wallpaper__1_ {
-            get {
-                object obj = ResourceManager.GetObject("wallpaperflare.com_wallpaper (1)", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
