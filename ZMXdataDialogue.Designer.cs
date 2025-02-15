@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ZMXdataDialogue));
             label1 = new Label();
             buttonSelectZMXsurface = new Button();
             tabControlSurfaceSelection = new TabControl();
@@ -38,38 +37,57 @@
             // 
             // label1
             // 
-            resources.ApplyResources(label1, "label1");
+            label1.AutoSize = true;
+            label1.Font = new Font("Archivo", 9F, FontStyle.Bold);
+            label1.Location = new Point(242, 21);
             label1.Name = "label1";
+            label1.Size = new Size(189, 18);
+            label1.TabIndex = 0;
+            label1.Text = "Choose aspheric surface to load";
             // 
             // buttonSelectZMXsurface
             // 
-            resources.ApplyResources(buttonSelectZMXsurface, "buttonSelectZMXsurface");
+            buttonSelectZMXsurface.Font = new Font("Archivo", 9F, FontStyle.Bold);
+            buttonSelectZMXsurface.Location = new Point(256, 307);
+            buttonSelectZMXsurface.Margin = new Padding(3, 2, 3, 2);
             buttonSelectZMXsurface.Name = "buttonSelectZMXsurface";
+            buttonSelectZMXsurface.Size = new Size(196, 22);
+            buttonSelectZMXsurface.TabIndex = 1;
+            buttonSelectZMXsurface.Text = "Select this aspheric surface";
             buttonSelectZMXsurface.UseVisualStyleBackColor = true;
             buttonSelectZMXsurface.Click += buttonSelectZMXsurface_Click;
             // 
             // tabControlSurfaceSelection
             // 
-            resources.ApplyResources(tabControlSurfaceSelection, "tabControlSurfaceSelection");
+            tabControlSurfaceSelection.Location = new Point(3, 3);
+            tabControlSurfaceSelection.Margin = new Padding(3, 2, 3, 2);
             tabControlSurfaceSelection.Name = "tabControlSurfaceSelection";
             tabControlSurfaceSelection.SelectedIndex = 0;
+            tabControlSurfaceSelection.Size = new Size(668, 241);
+            tabControlSurfaceSelection.TabIndex = 2;
             // 
             // panelTabControlSurfaceSelection
             // 
-            resources.ApplyResources(panelTabControlSurfaceSelection, "panelTabControlSurfaceSelection");
             panelTabControlSurfaceSelection.Controls.Add(tabControlSurfaceSelection);
+            panelTabControlSurfaceSelection.Location = new Point(10, 48);
+            panelTabControlSurfaceSelection.Margin = new Padding(3, 2, 3, 2);
             panelTabControlSurfaceSelection.Name = "panelTabControlSurfaceSelection";
+            panelTabControlSurfaceSelection.Size = new Size(673, 246);
+            panelTabControlSurfaceSelection.TabIndex = 3;
             // 
             // ZMXdataDialogue
             // 
-            resources.ApplyResources(this, "$this");
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlLightLight;
+            ClientSize = new Size(700, 338);
             Controls.Add(panelTabControlSurfaceSelection);
             Controls.Add(buttonSelectZMXsurface);
             Controls.Add(label1);
             FormBorderStyle = FormBorderStyle.FixedDialog;
+            Margin = new Padding(3, 2, 3, 2);
             Name = "ZMXdataDialogue";
+            Text = "Zemax Parser";
             panelTabControlSurfaceSelection.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
