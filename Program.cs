@@ -12,5 +12,6 @@ internal static class Program
         // see https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
         Application.Run(new SurfaceMaster());
+        System.Net.ServicePointManager.DefaultConnectionLimit = 10;
     }
 }

@@ -3,7 +3,12 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms.DataVisualization.Charting;
-using WMPLib; 
+using WMPLib;
+using System.Net.Http;
+using System.Net.Http.Headers; // Make sure to include this at the top
+using Newtonsoft.Json;
+using System.IO.Compression;
+using System.Net;
 
 namespace SurfaceMaster;
 
@@ -22,7 +27,7 @@ public partial class SurfaceMaster : Form
     private readonly SurfaceCalculations surfaceCalculations;
     private ZMXdataDialogue zmxDataDialogue;
 
-
+    private const string CurrentVersion = "2.0.7";
 
     // Add Windows Media Player instance
     private WindowsMediaPlayer mediaPlayer;
@@ -34,6 +39,7 @@ public partial class SurfaceMaster : Form
         Thread.CurrentThread.CurrentUICulture = new CultureInfo("en");
 
         InitializeComponent();
+        var _ = consoleTextBox.Handle;
         CheckFilesOnStartup();
         InitializeTextBoxValidation();
 
@@ -113,9 +119,21 @@ public partial class SurfaceMaster : Form
         }
     }
 
+    // Event handler for link clicks in the RichTextBox.
+    private void ConsoleTextBox_LinkClicked(object sender, LinkClickedEventArgs e)
+    {
+        if (e.LinkText.StartsWith("update://"))
+        {
+            string encodedUrl = e.LinkText.Substring("update://".Length);
+            string downloadUrl = Uri.UnescapeDataString(encodedUrl);
+            StartUpdate();
+        }
+    }
+
     private void CheckFilesOnStartup()
     {
-        AppendToConsole("SurfaceMaster V2.0.3 successfully loaded."); // UPDATE VERSION!!!!
+        AppendToConsole($"SurfaceMaster V{CurrentVersion} successfully loaded.");// UPDATE VERSION!!!!
+        CheckForUpdatesAsync().ConfigureAwait(false); // Start update check 
 
         var programFolder = AppDomain.CurrentDomain.BaseDirectory;
         var equationFitterPath = Path.Combine(programFolder, "equationfitter.exe");
@@ -126,6 +144,238 @@ public partial class SurfaceMaster : Form
         else
             AppendToConsole("equationfitter.exe is missing.");
     }
+
+
+
+
+
+
+
+
+
+
+    #region updater
+    private async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("SurfaceMaster");
+                var response = await client.GetAsync("https://api.github.com/repos/JagermeisterLover/SurfaceMaster/releases/latest");
+                if (response.IsSuccessStatusCode)
+                {
+                    string json = await response.Content.ReadAsStringAsync();
+                    dynamic release = JsonConvert.DeserializeObject(json);
+
+                    string originalTag = release.tag_name;
+                    string cleanedTag = originalTag.StartsWith("v", StringComparison.OrdinalIgnoreCase)
+                        ? originalTag.Substring(1)
+                        : originalTag;
+
+                    if (new Version(cleanedTag) > new Version(CurrentVersion))
+                    {
+                        string downloadUrl = GetDownloadUrlFromRelease(release);
+                        AppendToConsole("About to call StartUpdate()");
+                        StartUpdate();
+                        if (downloadUrl != null)
+                        {
+                            AppendUpdateLink(originalTag, downloadUrl);
+                        }
+                        else
+                        {
+                            AppendToConsole("Update asset not found in release.");
+                        }
+                    }
+                    else
+                    {
+                        AppendToConsole("No updates available.");
+                    }
+                }
+                else
+                {
+                    AppendToConsole("Update check failed: " + response.ReasonPhrase);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendToConsole($"Update check failed: {ex.Message}");
+        }
+    }
+
+    private string GetDownloadUrlFromRelease(dynamic release)
+    {
+        foreach (var asset in release.assets)
+        {
+            if (asset.name.ToString().Equals("SurfaceMaster.zip", StringComparison.OrdinalIgnoreCase))
+            {
+                return asset.browser_download_url.ToString();
+            }
+        }
+        return release.assets.Count > 0
+            ? release.assets[0].browser_download_url.ToString()
+            : null;
+    }
+
+
+    private bool IsNewVersion(string latestVersion)
+    {
+        // Remove any leading 'v' (or 'V') from the version string.
+        if (latestVersion.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+        {
+            latestVersion = latestVersion.Substring(1);
+        }
+        Version current = new Version(CurrentVersion);
+        Version latest = new Version(latestVersion);
+        return latest > current;
+    }
+
+    private void InsertLink(string displayText, string link)
+    {
+        // RTF field for a hyperlink.
+        string linkRtf = $@"{{\field{{\*\fldinst HYPERLINK ""{link}""}}{{\fldrslt {displayText}}}}}";
+        consoleTextBox.SelectedRtf = linkRtf;
+    }
+
+    // Appends a message with a clickable update link to the console.
+    private void AppendUpdateLink(string latestVersion, string downloadUrl)
+    {
+        string messageBefore = $"New version {latestVersion} available. Click ";
+        string messageAfter = " to update.";
+
+        string encodedUrl = Uri.EscapeDataString(downloadUrl);
+        string link = $"update://{encodedUrl}";
+
+        if (consoleTextBox.InvokeRequired)
+        {
+            consoleTextBox.Invoke(() =>
+            {
+                consoleTextBox.AppendText(messageBefore);
+                InsertLink("here", link);
+                consoleTextBox.AppendText(messageAfter + Environment.NewLine);
+            });
+        }
+        else
+        {
+            consoleTextBox.AppendText(messageBefore);
+            InsertLink("here", link);
+            consoleTextBox.AppendText(messageAfter + Environment.NewLine);
+        }
+    }
+
+    private async void StartUpdate()
+    {
+        try
+        {
+            string tempDir = Path.GetTempPath();
+            string zipPath = Path.Combine(tempDir, "SurfaceMasterUpdate.zip");
+            string extractPath = Path.Combine(tempDir, "SurfaceMasterUpdate");
+
+            // Cleanup previous updates
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+            if (Directory.Exists(extractPath)) Directory.Delete(extractPath, true);
+
+            using (var client = new HttpClient(new HttpClientHandler
+            {
+                UseProxy = false,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                UseCookies = false
+            }))
+            {
+                client.Timeout = TimeSpan.FromMinutes(5);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("SurfaceMasterUpdater/1.0");
+
+                // Get latest release info
+                var releaseResponse = await client.GetStringAsync(
+                    "https://api.github.com/repos/JagermeisterLover/SurfaceMaster/releases/latest");
+                dynamic release = JsonConvert.DeserializeObject(releaseResponse);
+                string downloadUrl = release.assets[0].browser_download_url.ToString();
+
+                AppendToConsole($"Starting download from: {downloadUrl}");
+
+                // Configure download with large buffer
+                const int bufferSize = 1048576; // 1MB buffer
+                using (var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
+                using (var contentStream = await response.Content.ReadAsStreamAsync())
+                using (var fs = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.Asynchronous))
+                {
+                    var sw = Stopwatch.StartNew();
+                    long totalBytes = response.Content.Headers.ContentLength ?? -1;
+                    long totalRead = 0L;
+                    var buffer = new byte[bufferSize];
+                    int read;
+                    int lastReportedProgress = -1;
+
+                    while ((read = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    {
+                        await fs.WriteAsync(buffer, 0, read);
+                        totalRead += read;
+
+                        // Progress reporting with speed
+                        if (totalBytes > 0)
+                        {
+                            int progressPercentage = (int)((totalRead * 100) / totalBytes);
+                            int currentReport = progressPercentage / 10;
+
+                            if (currentReport > lastReportedProgress)
+                            {
+                                double mbps = (totalRead / (1024.0 * 1024.0)) / sw.Elapsed.TotalSeconds;
+                                AppendToConsole($"Download progress: {currentReport * 10}% ({mbps:0.0} MB/s)");
+                                lastReportedProgress = currentReport;
+                            }
+                        }
+                    }
+
+                    AppendToConsole($"Download completed in {sw.Elapsed.TotalSeconds:0.0}s");
+                }
+
+                // Verify ZIP file
+                using (var file = File.OpenRead(zipPath))
+                {
+                    byte[] header = new byte[4];
+                    await file.ReadAsync(header, 0, 4);
+                    if (BitConverter.ToString(header) != "50-4B-03-04")
+                    {
+                        AppendToConsole("Error: Invalid ZIP file format");
+                        return;
+                    }
+                }
+
+                // Extract files
+                AppendToConsole("Extracting update package...");
+                ZipFile.ExtractToDirectory(zipPath, extractPath);
+
+                // Start updater process
+                string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                string updaterPath = Path.Combine(appDir, "Updater.exe");
+
+                if (!File.Exists(updaterPath))
+                {
+                    AppendToConsole("Error: Updater.exe not found");
+                    return;
+                }
+
+                ProcessStartInfo psi = new ProcessStartInfo(updaterPath)
+                {
+                    Arguments = $"\"{Application.ExecutablePath}\" \"{extractPath}\"",
+                    UseShellExecute = true,
+                    Verb = "runas" // Request admin privileges
+                };
+
+                AppendToConsole("Launching updater...");
+                Process.Start(psi);
+                Application.Exit();
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendToConsole($"Update failed: {ex.Message}");
+            Debug.WriteLine($"Update error: {ex}");
+        }
+    }
+
+    #endregion
 
 
     #region duranduran
@@ -199,6 +449,8 @@ public partial class SurfaceMaster : Form
     }
     #endregion
 
+
+
     #region panels
     private void ComboBoxSurfaceType_SelectedIndexChanged(object sender, EventArgs e)
     {
@@ -247,6 +499,7 @@ public partial class SurfaceMaster : Form
         return string.Empty;
     }
     #endregion
+
 
 
     // A helper class to hold common input parameters and a delegate for sag calculation.
